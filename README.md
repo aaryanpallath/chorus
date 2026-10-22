@@ -73,7 +73,9 @@ overflows and checks that a reading viewer on the same edge still receives every
 * 500-character messages, valid UTF-8; anonymous viewers can read but not send.
 * Token bucket per user: 20 messages per 30 s for viewers, 100 per 30 s for moderators.
 * Moderator commands: `/slow [s]`, `/slowoff`, `/timeout user [s]`, `/ban user`, `/unban user`,
-  `/clear`. Timeouts and bans also remove the user's messages from viewers' screens.
+  `/clear`. Timeouts and bans also remove the user's messages from viewers' screens. Commands count
+  against the rate limit, banned or timed-out moderators cannot use them, and nobody can ban or time
+  out the broadcaster (or themselves).
 * Moderation filter that catches l33t-speak (`5p01l3r`), stretched letters (`baaaad`), dots between
   letters and spaced-out letters, without blocking innocent words that contain a short term (`badge`).
 
@@ -118,6 +120,8 @@ Edges expose `/metrics` (viewers, deliveries, slow-consumer disconnects, sequenc
   deployed cluster's.
 * Tokens are HMAC-signed by a shared secret. There is no login service; `cmd/token` issues tokens for testing.
 * The filter can be evaded by a one-letter word next to spaced letters ("a b a d" reads as "abad").
+* Moderators can time out or ban other moderators: the broker only learns a user's role from that
+  user's own actions, so it cannot rank a command's target.
 
 ## Testing
 `go test -race ./...` covers the chat rules (sequencing, validation, slow mode, timeouts and bans,

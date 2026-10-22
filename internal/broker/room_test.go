@@ -132,3 +132,37 @@ func TestModsBypassFilter(t *testing.T) {
 		t.Fatal(out.Reject)
 	}
 }
+
+func TestModerationHierarchy(t *testing.T) {
+	r := newRoom() // channel "demo"
+	if out := r.Handle("mod1", protocol.RoleModerator, "/ban demo", 0, t0); !strings.Contains(out.Reject, "broadcaster") {
+		t.Fatalf("mod banned the broadcaster: %+v", out)
+	}
+	if out := r.Handle("mod1", protocol.RoleModerator, "/timeout @DEMO 60", 0, t0); !strings.Contains(out.Reject, "broadcaster") {
+		t.Fatalf("mod timed out the broadcaster: %+v", out)
+	}
+	if out := r.Handle("mod1", protocol.RoleModerator, "/ban mod1", 0, t0); !strings.Contains(out.Reject, "yourself") {
+		t.Fatalf("self-ban allowed: %+v", out)
+	}
+	// a banned moderator can no longer run commands; the broadcaster can unban them
+	r.Handle("demo", protocol.RoleBroadcaster, "/ban mod1", 0, t0)
+	if out := r.Handle("mod1", protocol.RoleModerator, "/clear", 0, t0); !strings.Contains(out.Reject, "banned") {
+		t.Fatalf("banned moderator ran a command: %+v", out)
+	}
+	if out := r.Handle("demo", protocol.RoleBroadcaster, "/unban mod1", 0, t0); out.Reject != "" {
+		t.Fatal(out.Reject)
+	}
+}
+
+func TestCommandsAreRateLimited(t *testing.T) {
+	r := newRoom()
+	ok := 0
+	for i := 0; i < 120; i++ { // moderators get 100 actions per 30s
+		if r.Handle("mod1", protocol.RoleModerator, "/slow 5", 0, t0).Reject == "" {
+			ok++
+		}
+	}
+	if ok != 100 {
+		t.Fatalf("allowed %d commands, want 100", ok)
+	}
+}

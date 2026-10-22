@@ -63,17 +63,17 @@ func (r *Room) Handle(user string, role protocol.Role, text string, clientTS int
 	if utf8.RuneCountInString(text) > MaxMessageRunes {
 		return Outcome{Reject: "message exceeds " + strconv.Itoa(MaxMessageRunes) + " characters"}
 	}
-	if strings.HasPrefix(text, "/") {
-		return r.command(user, role, text, now)
-	}
-	if r.bans[user] {
-		return Outcome{Reject: "you are banned from this channel"}
-	}
-	if until, ok := r.timeouts[user]; ok {
-		if now.Before(until) {
-			return Outcome{Reject: "you are timed out for " + until.Sub(now).Round(time.Second).String()}
+	// Bans and timeouts apply to everyone except the broadcaster, including moderators issuing commands.
+	if role != protocol.RoleBroadcaster {
+		if r.bans[user] {
+			return Outcome{Reject: "you are banned from this channel"}
 		}
-		delete(r.timeouts, user)
+		if until, ok := r.timeouts[user]; ok {
+			if now.Before(until) {
+				return Outcome{Reject: "you are timed out for " + until.Sub(now).Round(time.Second).String()}
+			}
+			delete(r.timeouts, user)
+		}
 	}
 	b := r.buckets[user]
 	if b == nil {
@@ -83,6 +83,12 @@ func (r *Room) Handle(user string, role protocol.Role, text string, clientTS int
 		}
 		b = NewBucket(cfg, now)
 		r.buckets[user] = b
+	}
+	if strings.HasPrefix(text, "/") {
+		if !b.Take(now) { // commands count against the same allowance as messages
+			return Outcome{Reject: "you are sending messages too quickly"}
+		}
+		return r.command(user, role, text, now)
 	}
 	if !role.Privileged() && r.slow > 0 {
 		if last, ok := r.lastMessage[user]; ok && now.Sub(last) < r.slow {
@@ -118,6 +124,16 @@ func (r *Room) command(user string, role protocol.Role, text string, now time.Ti
 			return strings.TrimPrefix(strings.ToLower(f[i]), "@")
 		}
 		return ""
+	}
+	// The broadcaster cannot be timed out or banned in their own channel, and nobody can target themselves.
+	// (Moderators can still act on other moderators: the broker learns roles only from each action's
+	// sender, so it cannot rank targets.)
+	if cmd == "/timeout" || cmd == "/ban" {
+		if t := arg(1); t == r.Name {
+			return Outcome{Reject: "the broadcaster cannot be " + map[string]string{"/ban": "banned", "/timeout": "timed out"}[cmd]}
+		} else if t == user {
+			return Outcome{Reject: "you cannot " + strings.TrimPrefix(cmd, "/") + " yourself"}
+		}
 	}
 	switch cmd {
 	case "/slow":
