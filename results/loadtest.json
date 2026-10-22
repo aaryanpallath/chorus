@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-10-22T22:12:31Z",
+  "machine": {
+    "OS": "darwin",
+    "Arch": "arm64",
+    "CPUs": 10,
+    "Go": "go1.27.3"
+  },
+  "config": {
+    "Brokers": 2,
+    "Edges": 3,
+    "Channels": 40,
+    "Viewers": 6000,
+    "ChattersPerChannel": 6,
+    "ChatRate": 0.5,
+    "Zipf": 1.1,
+    "Phase": 20000000000,
+    "StallFraction": 0.05,
+    "HypeChatters": 300,
+    "Queue": 256,
+    "Seed": 7
+  },
+  "viewers_in_largest_channel": 1631,
+  "phases": [
+    {
+      "name": "steady",
+      "duration_s": 20,
+      "messages_accepted": 2357,
+      "messages_rejected": 0,
+      "expected_deliveries": 353346,
+      "deliveries": 353346,
+      "delivery_ratio": 1,
+      "deliveries_per_second": 17667,
+      "latency_healthy_viewers": {
+        "samples": 353346,
+        "p50_ms": 3.47,
+        "p90_ms": 13.18,
+        "p99_ms": 20.69,
+        "p999_ms": 25.95,
+        "max_ms": 27.25
+      },
+      "stalled_viewers": 0,
+      "slow_disconnects": 0
+    },
+    {
+      "name": "stalled",
+      "duration_s": 20,
+      "messages_accepted": 2434,
+      "messages_rejected": 0,
+      "expected_deliveries": 337208,
+      "deliveries": 337208,
+      "delivery_ratio": 1,
+      "deliveries_per_second": 16860,
+      "latency_healthy_viewers": {
+        "samples": 337208,
+        "p50_ms": 3.8,
+        "p90_ms": 14.66,
+        "p99_ms": 23.11,
+        "p999_ms": 29.41,
+        "max_ms": 34.35
+      },
+      "stalled_viewers": 295,
+      "slow_disconnects": 0
+    },
+    {
+      "name": "hype",
+      "duration_s": 20,
+      "messages_accepted": 5948,
+      "messages_rejected": 0,
+      "expected_deliveries": 7005768,
+      "deliveries": 7005768,
+      "delivery_ratio": 1,
+      "deliveries_per_second": 350288,
+      "latency_healthy_viewers": {
+        "samples": 7005768,
+        "p50_ms": 16.75,
+        "p90_ms": 30.73,
+        "p99_ms": 46.38,
+        "p999_ms": 62.39,
+        "max_ms": 74.36
+      },
+      "stalled_viewers": 295,
+      "slow_disconnects": 0
+    }
+  ],
+  "sequence_gaps_seen_by_edges": 0,
+  "broker_to_edge_drops": 0,
+  "heap_inuse_mb_end": 606.8,
+  "goroutines_end": 32071,
+  "note": "brokers, edges and all clients run in one process on one machine over loopback; latency includes client-side scheduling and is a conservative upper bound for the server path"
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>chorus chat</title>
+<style>
+body{font:14px system-ui,sans-serif;margin:0;display:flex;flex-direction:column;height:100vh;background:#18181b;color:#efeff1}
+header{padding:8px 12px;background:#0e0e10;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input,button{font:inherit;padding:4px 8px;border-radius:4px;border:1px solid #3a3a3d;background:#0e0e10;color:inherit}
+#log{flex:1;overflow-y:auto;padding:8px 12px}#log div{padding:2px 0;word-wrap:break-word}
+.u{font-weight:600;color:#bf94ff}.n{color:#adadb8;font-style:italic}.r{color:#ff8280}
+form{display:flex;gap:8px;padding:8px 12px;background:#0e0e10}form input{flex:1}
+</style></head><body>
+<header>channel <input id="ch" value="demo" size="10"> token <input id="tok" placeholder="optional (read-only without)" size="28">
+<button id="go">join</button><span id="st" class="n"></span></header>
+<div id="log"></div>
+<form id="f"><input id="msg" placeholder="Send a message (mods: /slow 10, /timeout user 60, /ban user, /clear)" autocomplete="off"><button>Chat</button></form>
+<script>
+let ws;const log=document.getElementById('log');
+function line(cls,parts){const d=document.createElement('div');if(parts.user)d.dataset.user=parts.user;
+ for(const[c,t]of parts.items){const s=document.createElement('span');if(c)s.className=c;s.textContent=t;d.append(s)}
+ d.className=cls||'';log.append(d);if(log.childElementCount>500)log.firstChild.remove();log.scrollTop=log.scrollHeight}
+document.getElementById('go').onclick=()=>{ws&&ws.close();log.textContent='';
+ const q=new URLSearchParams({channel:document.getElementById('ch').value});const t=document.getElementById('tok').value;if(t)q.set('token',t);
+ ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?${q}`);
+ ws.onopen=()=>document.getElementById('st').textContent='connected';ws.onclose=()=>document.getElementById('st').textContent='disconnected';
+ ws.onmessage=e=>{for(const ln of e.data.split('\n')){const ev=JSON.parse(ln);
+  if(ev.kind==='msg')line('',{user:ev.user,items:[['u',ev.user],['',': '+ev.text]]});
+  else if(ev.kind==='notice')line('n',{items:[['',ev.text]]});
+  else if(ev.kind==='reject')line('r',{items:[['',ev.text]]});
+  else if(ev.kind==='clear')log.textContent='';
+  else if(ev.kind==='purge')log.querySelectorAll(`[data-user="${CSS.escape(ev.target)}"]`).forEach(n=>n.remove());}}};
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const m=document.getElementById('msg');
+ if(ws&&ws.readyState===1&&m.value){ws.send(JSON.stringify({text:m.value,ts:Date.now()*1e6}));m.value=''}};
+</script></body></html>

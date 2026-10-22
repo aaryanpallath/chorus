@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+      # a small, short version of the load test: fails if any healthy viewer misses a message
+      - run: |
+          go run ./cmd/loadgen -viewers 800 -channels 10 -hype 60 -phase 4s -out /tmp/lt.json
+          python3 -c "import json,sys; d=json.load(open('/tmp/lt.json')); bad=[p['name'] for p in d['phases'] if p['delivery_ratio']<1]; sys.exit(f'missed deliveries in {bad}' if bad else 0)"
